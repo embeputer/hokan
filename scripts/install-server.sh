@@ -238,8 +238,12 @@ hokan_log ""
 hokan_warn "Git SSH is Hokan's own server on $SSH_ADDR (not system sshd on :22)."
 hokan_log ""
 
-if ! hokan_confirm "Proceed with install?" Y; then
-	hokan_die "aborted"
+if [[ -f "$ENV_FILE" ]]; then
+	hokan_warn "$ENV_FILE already exists"
+	hokan_log "  Upgrades that keep your data/config: ./scripts/update-server.sh --prefix $PREFIX"
+	if ! hokan_confirm "Overwrite env/unit files and continue as a reinstall?" N; then
+		hokan_die "aborted. Use ./scripts/update-server.sh --prefix $PREFIX"
+	fi
 fi
 
 if [[ "$DRY_RUN" != 1 ]]; then
@@ -393,6 +397,7 @@ fi
 if [[ "$INSTALL_CLI" == [Yy]* ]]; then
 	hokan_log "  Login: $BIN_DIR/hokan --server $BASE_URL auth login"
 fi
+hokan_log "  Later: ./scripts/update-server.sh --prefix $PREFIX"
 hokan_log ""
 hokan_log "Uninstall:"
 if [[ "$UNIT" == user ]]; then

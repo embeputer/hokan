@@ -282,3 +282,86 @@ hokan_wait_healthz() {
 	done
 	hokan_warn "server started but $url did not return 200 yet"
 }
+
+# Fast-forward the source checkout. Skips if not a git repo or if the tree is dirty.
+hokan_git_pull() {
+	local dir="${1:-$HOKAN_SRC}"
+	if [[ ! -d "$dir/.git" ]]; then
+		hokan_warn "$dir is not a git checkout; building the tree as-is"
+		return 0
+	fi
+	if [[ -n "$(git -C "$dir" status --porcelain)" ]]; then
+		hokan_warn "uncommitted changes in $dir; skipping git pull"
+		git -C "$dir" status -sb
+		return 0
+	fi
+	local before after
+	before=$(git -C "$dir" rev-parse --short HEAD)
+	hokan_info "git pull --ff-only ($dir @ $before)"
+	if [[ "$DRY_RUN" == 1 ]]; then
+		hokan_log "dry-run: git -C $dir pull --ff-only"
+		return 0
+	fi
+	git -C "$dir" pull --ff-only
+	after=$(git -C "$dir" rev-parse --short HEAD)
+	if [[ "$before" == "$after" ]]; then
+		hokan_info "already up to date ($after)"
+	else
+		hokan_info "updated $before -> $after"
+	fi
+}
+
+# Locate an existing server prefix (env file + binary).
+hokan_find_server_prefix() {
+	local c
+	if [[ -n "${PREFIX-}" ]]; then
+		[[ -f "$PREFIX/hokan.env" ]] || hokan_die "no $PREFIX/hokan.env (not an installed server)
+  Example: $0 --prefix $HOME/hokan"
+		PREFIX=$(cd "$PREFIX" && pwd)
+		return 0
+	fi
+	for c in "$HOME/hokan" /var/lib/hokan "${HOKAN_SRC-}"; do
+		[[ -n "$c" ]] || continue
+		if [[ -f "$c/hokan.env" && -e "$c/bin/hokan-server" ]]; then
+			PREFIX=$(cd "$c" && pwd)
+			hokan_info "found install at $PREFIX"
+			return 0
+		fi
+	done
+	hokan_die "no existing Hokan server install.
+  Run ./scripts/install-server.sh first, or pass --prefix DIR
+  Example: $0 --prefix $HOME/hokan"
+}
+
+hokan_detect_unit() {
+	if [[ -f /etc/systemd/system/hokan.service ]]; then
+		UNIT=system
+	elif [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/hokan.service" ]]; then
+		UNIT=user
+	else
+		UNIT=none
+	fi
+}
+
+hokan_restart_server() {
+	case "${UNIT:-none}" in
+	system)
+		if [[ "$(id -u)" == 0 ]]; then
+			hokan_run systemctl restart hokan.service
+		else
+			hokan_run sudo systemctl restart hokan.service
+		fi
+		;;
+	user)
+		hokan_run systemctl --user restart hokan.service
+		;;
+	none)
+		hokan_warn "no systemd unit; restart hokan-server yourself"
+		;;
+	esac
+}
+
+hokan_env_get() {
+	local key="$1" file="$2"
+	awk -F= -v k="$key" '$1==k {sub(/^[^=]+=/,""); print; exit}' "$file"
+}

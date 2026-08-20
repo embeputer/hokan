@@ -65,6 +65,13 @@ sudo ./scripts/install-server.sh --yes --base-url https://git.example.com
 
 `--help` on either script lists every flag. `--dry-run` prints the plan without writing files.
 
+**Update** an existing install (git pull, rebuild, restart; does not rewrite env or data):
+
+```bash
+./scripts/update-server.sh
+./scripts/update-cli.sh
+```
+
 ## CI runner
 
 ```bash
