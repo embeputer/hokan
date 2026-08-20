@@ -1,0 +1,23 @@
+{{define "title"}}Repositories — Hokan{{end}}
+{{define "content"}}
+<div class="page-head">
+  <h1>Repositories</h1>
+  {{if .User}}<a class="btn" href="/repos/new">New repository</a>{{end}}
+</div>
+{{if .Repos}}
+  <div class="list">
+    {{range .Repos}}
+      <div class="card repo-card">
+        <div>
+          {{if eq .OwnerType "org"}}<a href="/orgs/{{.OwnerName}}">{{.OwnerName}}</a>{{else}}<a href="/{{.OwnerName}}">{{.OwnerName}}</a>{{end}}<span class="faint"> / </span><a href="/{{.OwnerName}}/{{.Name}}">{{.Name}}</a>
+        </div>
+        <span>
+          {{if .IsPrivate}}<span class="pill pill-private">private</span>{{else}}<span class="pill">public</span>{{end}}
+        </span>
+      </div>
+    {{end}}
+  </div>
+{{else}}
+  <div class="empty">No repositories yet.{{if $.User}} Create one to get started.{{end}}</div>
+{{end}}
+{{end}}

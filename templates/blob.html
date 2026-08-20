@@ -1,0 +1,7 @@
+{{define "title"}}{{.BlobPath}} — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+<p class="muted"><a href="/{{.Repo.OwnerName}}/{{.Repo.Name}}">{{.Repo.Name}}</a> / {{.BlobPath}}</p>
+<div class="card blob-wrap">{{.BlobHTML}}</div>
+{{end}}

@@ -1,0 +1,13 @@
+/bin/
+/data/
+*.db
+*.db-wal
+*.db-shm
+*.exe
+.DS_Store
+/tmp/
+coverage.out
+dist/
+/hokan-server
+/hokan
+/hokan-runner

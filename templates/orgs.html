@@ -1,0 +1,18 @@
+{{define "title"}}Organizations — Hokan{{end}}
+{{define "content"}}
+<div class="page-head">
+  <h1>Organizations</h1>
+</div>
+<form class="stack" method="post" action="/orgs">
+  <label>Name <input name="name" placeholder="acme" required></label>
+  <button type="submit">Create org</button>
+</form>
+<h2>Yours</h2>
+{{if .Orgs}}
+  {{range .Orgs}}
+    <div class="item-row"><a href="/orgs/{{.Name}}">{{.Name}}</a></div>
+  {{end}}
+{{else}}
+  <div class="empty">No organizations yet.</div>
+{{end}}
+{{end}}

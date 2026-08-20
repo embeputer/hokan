@@ -1,0 +1,19 @@
+{{define "title"}}Search — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+{{if .Hits}}
+  <div class="list">
+    {{range .Hits}}
+      <div class="item-row">
+        <div>
+          <a href="/{{$.Repo.OwnerName}}/{{$.Repo.Name}}/blob/{{$.Ref}}/{{.Path}}">{{.Path}}</a>{{if .Line}}<span class="muted">:{{.Line}}</span>{{end}}
+          <div class="muted">{{.Preview}}</div>
+        </div>
+      </div>
+    {{end}}
+  </div>
+{{else}}
+  <div class="empty">{{if .Query}}No matches for “{{.Query}}”.{{else}}Search this repository.{{end}}</div>
+{{end}}
+{{end}}

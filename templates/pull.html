@@ -1,0 +1,44 @@
+{{define "title"}}PR #{{.PR.Number}} — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+<div class="page-head">
+  <h1>#{{.PR.Number}} {{.PR.Title}}</h1>
+  <span class="pill pill-{{.PR.State}}">{{.PR.State}}</span>
+</div>
+<p class="muted">{{.PR.SourceBranch}} → {{.PR.TargetBranch}} · <a href="/{{.PR.AuthorName}}">{{.PR.AuthorName}}</a></p>
+{{if .PR.Description}}<div class="card" style="margin:12px 0">{{.PR.Description}}</div>{{end}}
+{{if eq .PR.State "open"}}
+  <form class="merge-box" method="post" action="/{{.Repo.OwnerName}}/{{.Repo.Name}}/pulls/{{.PR.Number}}/merge" onsubmit="return confirm('Merge this pull request into {{.PR.TargetBranch}}?')">
+    <div>
+      <strong>Merge commit</strong>
+      <div class="muted">Creates a merge commit on {{.PR.TargetBranch}}.</div>
+    </div>
+    <button type="submit">Merge</button>
+  </form>
+{{end}}
+{{if .MergeError}}<div class="flash error">{{.MergeError}}</div>{{end}}
+<h2>Diff</h2>
+{{if .DiffHTML}}{{.DiffHTML}}{{else}}<div class="empty">No diff.</div>{{end}}
+<h2>Conversation</h2>
+<div class="thread">
+  {{range .Comments}}
+    <div class="card comment">
+      <div class="meta"><strong><a href="/{{.AuthorName}}">{{.AuthorName}}</a></strong> <span class="muted">{{.CreatedAt.Format "2006-01-02 15:04"}}</span>
+        {{if .FilePath}}<span class="muted"> · {{.FilePath}}{{if .Line}}:{{.Line}}{{end}}</span>{{end}}
+      </div>
+      <p>{{.Body}}</p>
+    </div>
+  {{else}}
+    <p class="muted">No comments yet.</p>
+  {{end}}
+</div>
+<form class="stack wide" method="post" action="/{{.Repo.OwnerName}}/{{.Repo.Name}}/pulls/{{.PR.Number}}/comments" style="margin-top:16px">
+  <label>Comment <textarea name="body" rows="4" required></textarea></label>
+  <div class="row">
+    <input name="file_path" placeholder="file path (optional)">
+    <input name="line" placeholder="line" style="max-width:6rem">
+  </div>
+  <button type="submit">Comment</button>
+</form>
+{{end}}

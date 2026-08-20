@@ -1,0 +1,30 @@
+{{define "title"}}{{.Org.Name}} — Hokan{{end}}
+{{define "content"}}
+<h1>{{.Org.Name}}</h1>
+<h2>Teams</h2>
+<form class="stack" method="post" action="/orgs/{{.Org.Name}}/teams">
+  <label>Name <input name="name" required></label>
+  <label>Permission
+    <select name="permission">
+      <option value="read">read</option>
+      <option value="write">write</option>
+      <option value="admin">admin</option>
+    </select>
+  </label>
+  <button type="submit">Create team</button>
+</form>
+{{range .Teams}}
+  <div class="card" style="margin-top:12px">
+    <div class="page-head">
+      <strong>{{.Name}}</strong>
+      <span class="pill">{{.PermissionLevel}}</span>
+    </div>
+    <form class="row" method="post" action="/orgs/{{$.Org.Name}}/teams/{{.Name}}/members">
+      <input name="username" placeholder="username">
+      <button type="submit">Add member</button>
+    </form>
+  </div>
+{{else}}
+  <p class="muted">No teams yet.</p>
+{{end}}
+{{end}}

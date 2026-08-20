@@ -1,0 +1,22 @@
+{{define "title"}}Pull requests — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+<div class="page-head">
+  <h2 style="margin:0">Pull requests</h2>
+  <a class="btn" href="/{{.Repo.OwnerName}}/{{.Repo.Name}}/pulls/new">New pull request</a>
+</div>
+{{if .Pulls}}
+  {{range .Pulls}}
+    <div class="item-row">
+      <div>
+        <a href="/{{$.Repo.OwnerName}}/{{$.Repo.Name}}/pulls/{{.Number}}">#{{.Number}} {{.Title}}</a>
+        <div class="muted">{{.SourceBranch}} → {{.TargetBranch}} · <a href="/{{.AuthorName}}">{{.AuthorName}}</a></div>
+      </div>
+      <span class="pill pill-{{.State}}">{{.State}}</span>
+    </div>
+  {{end}}
+{{else}}
+  <div class="empty">No pull requests yet.</div>
+{{end}}
+{{end}}

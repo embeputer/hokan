@@ -1,0 +1,9 @@
+{{define "title"}}New repository — Hokan{{end}}
+{{define "content"}}
+<h1>New repository</h1>
+<form class="stack" method="post" action="/repos">
+  <label>Name <input name="name" required pattern="[A-Za-z0-9._-]+" placeholder="hello"></label>
+  <label class="inline"><input type="checkbox" name="private" value="1"> Private</label>
+  <button type="submit">Create repository</button>
+</form>
+{{end}}

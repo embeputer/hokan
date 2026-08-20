@@ -1,0 +1,26 @@
+{{define "title"}}SSH keys — Hokan{{end}}
+{{define "content"}}
+<div class="settings">
+  {{template "settings-nav" .}}
+  <div>
+    <h1>SSH keys</h1>
+    <form class="stack" method="post" action="/settings/keys">
+      <label>Name <input name="name" required placeholder="laptop"></label>
+      <label>Public key <textarea name="key" rows="4" required placeholder="ssh-ed25519 AAAA..."></textarea></label>
+      <button type="submit">Add key</button>
+    </form>
+    <h2>Your keys</h2>
+    {{range .Keys}}
+      <div class="item-row">
+        <div>
+          <strong>{{.Name}}</strong>
+          <div class="muted"><code>{{.Fingerprint}}</code></div>
+        </div>
+        <form method="post" action="/settings/keys/{{.ID}}/delete"><button class="secondary" type="submit">Delete</button></form>
+      </div>
+    {{else}}
+      <p class="muted">No keys yet.</p>
+    {{end}}
+  </div>
+</div>
+{{end}}

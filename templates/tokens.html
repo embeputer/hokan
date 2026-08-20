@@ -1,0 +1,25 @@
+{{define "title"}}Tokens — Hokan{{end}}
+{{define "content"}}
+<div class="settings">
+  {{template "settings-nav" .}}
+  <div>
+    <h1>Personal access tokens</h1>
+    {{if .NewToken}}
+      <div class="flash ok">Copy this token now — it will not be shown again. <code id="new-token">{{.NewToken}}</code> <button type="button" class="ghost" data-copy="#new-token">Copy</button></div>
+    {{end}}
+    <form class="stack" method="post" action="/settings/tokens">
+      <label>Name <input name="name" required placeholder="cli"></label>
+      <button type="submit">Create token</button>
+    </form>
+    <h2>Existing tokens</h2>
+    {{range .Tokens}}
+      <div class="item-row">
+        <strong>{{.Name}}</strong>
+        <form method="post" action="/settings/tokens/{{.ID}}/delete"><button class="secondary" type="submit">Revoke</button></form>
+      </div>
+    {{else}}
+      <p class="muted">No tokens yet.</p>
+    {{end}}
+  </div>
+</div>
+{{end}}

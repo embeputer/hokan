@@ -1,0 +1,18 @@
+{{define "title"}}CI — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+{{if .Jobs}}
+  {{range .Jobs}}
+    <div class="item-row">
+      <div>
+        <a href="/{{$.Repo.OwnerName}}/{{$.Repo.Name}}/ci/{{.ID}}">{{.Name}}</a>
+        <div class="muted"><code>{{shortSHA .CommitSHA}}</code></div>
+      </div>
+      <span class="pill pill-{{.Status}}">{{.Status}}</span>
+    </div>
+  {{end}}
+{{else}}
+  <div class="empty">No CI jobs yet. Add <code>.hokan/ci.yml</code> and push.</div>
+{{end}}
+{{end}}

@@ -1,0 +1,41 @@
+{{define "repo-header"}}
+<div class="repo-title">
+  <h1>
+    {{if eq .Repo.OwnerType "org"}}<a href="/orgs/{{.Repo.OwnerName}}">{{.Repo.OwnerName}}</a>{{else}}<a href="/{{.Repo.OwnerName}}">{{.Repo.OwnerName}}</a>{{end}}<span class="slash"> / </span>{{.Repo.Name}}
+  </h1>
+  {{if .Repo.IsPrivate}}<span class="pill pill-private">private</span>{{end}}
+</div>
+<div class="clone">
+  <div class="clone-item">
+    <span class="faint">HTTP</span>
+    <code id="clone-http">{{.CloneHTTP}}</code>
+    <button type="button" class="ghost" data-copy="#clone-http">Copy</button>
+  </div>
+  <div class="clone-item">
+    <span class="faint">SSH</span>
+    <code id="clone-ssh">{{.CloneSSH}}</code>
+    <button type="button" class="ghost" data-copy="#clone-ssh">Copy</button>
+  </div>
+</div>
+{{end}}
+
+{{define "repo-tabs"}}
+<nav class="tabs">
+  <a href="/{{.Repo.OwnerName}}/{{.Repo.Name}}" class="{{if eq .Tab "code"}}active{{end}}">Code</a>
+  <a href="/{{.Repo.OwnerName}}/{{.Repo.Name}}/commits" class="{{if eq .Tab "commits"}}active{{end}}">Commits</a>
+  <a href="/{{.Repo.OwnerName}}/{{.Repo.Name}}/branches" class="{{if eq .Tab "branches"}}active{{end}}">Branches</a>
+  <a href="/{{.Repo.OwnerName}}/{{.Repo.Name}}/pulls" class="{{if eq .Tab "pulls"}}active{{end}}">Pull requests</a>
+  <a href="/{{.Repo.OwnerName}}/{{.Repo.Name}}/issues" class="{{if eq .Tab "issues"}}active{{end}}">Issues</a>
+  <a href="/{{.Repo.OwnerName}}/{{.Repo.Name}}/ci" class="{{if eq .Tab "ci"}}active{{end}}">CI</a>
+  <form class="search-bar" method="get" action="/{{.Repo.OwnerName}}/{{.Repo.Name}}/search">
+    <input name="q" placeholder="Search code" value="{{.Query}}">
+  </form>
+</nav>
+{{end}}
+
+{{define "settings-nav"}}
+<nav class="settings-nav">
+  <a href="/settings/keys" class="{{if eq .Tab "keys"}}active{{end}}">SSH keys</a>
+  <a href="/settings/tokens" class="{{if eq .Tab "tokens"}}active{{end}}">Tokens</a>
+</nav>
+{{end}}

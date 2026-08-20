@@ -1,0 +1,11 @@
+{{define "title"}}New issue — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+<h2>New issue</h2>
+<form class="stack wide" method="post" action="/{{.Repo.OwnerName}}/{{.Repo.Name}}/issues">
+  <label>Title <input name="title" required></label>
+  <label>Description <textarea name="description" rows="8"></textarea></label>
+  <button type="submit">Create issue</button>
+</form>
+{{end}}

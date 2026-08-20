@@ -1,0 +1,19 @@
+{{define "title"}}Issues — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+<div class="page-head">
+  <h2 style="margin:0">Issues</h2>
+  <a class="btn" href="/{{.Repo.OwnerName}}/{{.Repo.Name}}/issues/new">New issue</a>
+</div>
+{{if .Issues}}
+  {{range .Issues}}
+    <div class="item-row">
+      <a href="/{{$.Repo.OwnerName}}/{{$.Repo.Name}}/issues/{{.Number}}">#{{.Number}} {{.Title}}</a>
+      <span class="pill pill-{{.State}}">{{.State}}</span>
+    </div>
+  {{end}}
+{{else}}
+  <div class="empty">No issues yet.</div>
+{{end}}
+{{end}}

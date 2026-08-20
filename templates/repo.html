@@ -1,0 +1,39 @@
+{{define "title"}}{{.Repo.FullName}} — Hokan{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+{{if .Entries}}
+  <div class="card" style="padding:0">
+    <table class="file-table">
+      <thead><tr><th>Name</th><th>Type</th></tr></thead>
+      <tbody>
+        {{if .Parent}}
+          <tr><td colspan="2"><a href="/{{$.Repo.OwnerName}}/{{$.Repo.Name}}/tree/{{$.Ref}}/{{.Parent}}">../</a></td></tr>
+        {{end}}
+        {{range .Entries}}
+          <tr>
+            <td>
+              {{if eq .Type "tree"}}
+                <span class="ico">/</span>
+                <a href="/{{$.Repo.OwnerName}}/{{$.Repo.Name}}/tree/{{$.Ref}}/{{$.PathPrefix}}{{.Name}}">{{.Name}}</a>
+              {{else}}
+                <span class="ico">·</span>
+                <a href="/{{$.Repo.OwnerName}}/{{$.Repo.Name}}/blob/{{$.Ref}}/{{$.PathPrefix}}{{.Name}}">{{.Name}}</a>
+              {{end}}
+            </td>
+            <td class="muted">{{.Type}}</td>
+          </tr>
+        {{end}}
+      </tbody>
+    </table>
+  </div>
+{{else if not .ReadmeHTML}}
+  <div class="empty">
+    Empty repository. Push an initial commit:
+    <br><code>git clone {{.CloneHTTP}}</code>
+  </div>
+{{end}}
+{{if .ReadmeHTML}}
+  <div class="readme"><div class="card">{{.ReadmeHTML}}</div></div>
+{{end}}
+{{end}}

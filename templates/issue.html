@@ -1,0 +1,33 @@
+{{define "title"}}Issue #{{.Issue.Number}} — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+<div class="page-head">
+  <h1>#{{.Issue.Number}} {{.Issue.Title}}</h1>
+  <span class="pill pill-{{.Issue.State}}">{{.Issue.State}}</span>
+</div>
+<p class="muted">Opened by <a href="/{{.Issue.AuthorName}}">{{.Issue.AuthorName}}</a></p>
+{{if .Issue.Description}}<div class="card">{{.Issue.Description}}</div>{{end}}
+<div class="row" style="margin:16px 0">
+  {{if eq .Issue.State "open"}}
+    <form method="post" action="/{{.Repo.OwnerName}}/{{.Repo.Name}}/issues/{{.Issue.Number}}/close"><button class="secondary" type="submit">Close</button></form>
+  {{else}}
+    <form method="post" action="/{{.Repo.OwnerName}}/{{.Repo.Name}}/issues/{{.Issue.Number}}/reopen"><button type="submit">Reopen</button></form>
+  {{end}}
+</div>
+<h2>Comments</h2>
+<div class="thread">
+  {{range .Comments}}
+    <div class="card comment">
+      <div class="meta"><strong><a href="/{{.AuthorName}}">{{.AuthorName}}</a></strong></div>
+      <p>{{.Body}}</p>
+    </div>
+  {{else}}
+    <p class="muted">No comments yet.</p>
+  {{end}}
+</div>
+<form class="stack wide" method="post" action="/{{.Repo.OwnerName}}/{{.Repo.Name}}/issues/{{.Issue.Number}}/comments" style="margin-top:16px">
+  <label>Comment <textarea name="body" rows="4" required></textarea></label>
+  <button type="submit">Comment</button>
+</form>
+{{end}}

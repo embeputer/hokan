@@ -1,0 +1,20 @@
+{{define "title"}}Commits — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+{{if .Commits}}
+  <div class="list">
+    {{range .Commits}}
+      <div class="item-row">
+        <div>
+          <strong>{{.Subject}}</strong>
+          <div class="muted">{{.Author}} · {{.Date}}</div>
+        </div>
+        <code class="faint">{{shortSHA .SHA}}</code>
+      </div>
+    {{end}}
+  </div>
+{{else}}
+  <div class="empty">No commits yet.</div>
+{{end}}
+{{end}}

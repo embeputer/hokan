@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{block "title" .}}Hokan{{end}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="/"><span class="brand-mark"></span><span class="brand-name">Hokan</span></a>
+  <nav class="nav-links">
+    <a href="/">Repos</a>
+    {{if .User}}
+      <a href="/orgs">Orgs</a>
+      <details class="menu">
+        <summary>{{.User.Username}}</summary>
+        <div class="menu-list">
+          <a href="/{{.User.Username}}">Profile</a>
+          <a href="/settings/keys">SSH keys</a>
+          <a href="/settings/tokens">Tokens</a>
+          <a href="/logout">Log out</a>
+        </div>
+      </details>
+    {{else}}
+      <a href="/login">Log in</a>
+      <a class="btn" href="/signup" style="color:#1a1408">Sign up</a>
+    {{end}}
+  </nav>
+</header>
+<main class="wrap">
+  {{if .Flash}}<div class="flash {{.FlashType}}">{{.Flash}}</div>{{end}}
+  {{block "content" .}}{{end}}
+</main>
+</body>
+</html>

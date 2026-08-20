@@ -1,0 +1,17 @@
+{{define "title"}}{{.Job.Name}} — CI{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+<div class="page-head">
+  <h1>{{.Job.Name}}</h1>
+  <span class="pill pill-{{.Job.Status}}">{{.Job.Status}}</span>
+</div>
+<p class="muted"><code>{{.Job.CommitSHA}}</code></p>
+<pre class="log" id="ci-log"
+  {{if or (eq .Job.Status "running") (eq .Job.Status "queued")}}
+    hx-get="/{{.Repo.OwnerName}}/{{.Repo.Name}}/ci/{{.Job.ID}}/log"
+    hx-trigger="every 2s"
+    hx-swap="innerHTML"
+  {{end}}
+>{{.Job.LogText}}</pre>
+{{end}}

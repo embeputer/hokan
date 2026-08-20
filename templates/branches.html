@@ -1,0 +1,17 @@
+{{define "title"}}Branches — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+{{if .Branches}}
+  <div class="list">
+    {{range .Branches}}
+      <div class="item-row">
+        <a href="/{{$.Repo.OwnerName}}/{{$.Repo.Name}}/tree/{{.}}/">{{.}}</a>
+        {{if eq . $.Repo.DefaultBranch}}<span class="pill">default</span>{{end}}
+      </div>
+    {{end}}
+  </div>
+{{else}}
+  <div class="empty">No branches yet.</div>
+{{end}}
+{{end}}

@@ -1,0 +1,37 @@
+{{define "title"}}{{.Profile.Username}} — Hokan{{end}}
+{{define "content"}}
+<div class="profile">
+  <div class="profile-hero">
+    <div class="avatar" aria-hidden="true">{{initial .Profile.Username}}</div>
+    <div>
+      <h1>{{.Profile.Username}}</h1>
+      <p class="muted">Joined {{.Profile.CreatedAt.Format "2 Jan 2006"}}</p>
+      {{if and $.User (eq $.User.ID .Profile.ID)}}
+        <p class="muted">{{.Profile.Email}}</p>
+        <p><a href="/settings/keys">Settings</a></p>
+      {{end}}
+    </div>
+  </div>
+  {{if .Orgs}}
+    <h2>Organizations</h2>
+    <div class="row" style="flex-wrap:wrap;margin-bottom:16px">
+      {{range .Orgs}}
+        <a class="pill" href="/orgs/{{.Name}}">{{.Name}}</a>
+      {{end}}
+    </div>
+  {{end}}
+  <h2>Repositories</h2>
+  {{if .Repos}}
+    <div class="list">
+      {{range .Repos}}
+        <div class="card repo-card">
+          <a href="/{{.OwnerName}}/{{.Name}}">{{.Name}}</a>
+          {{if .IsPrivate}}<span class="pill pill-private">private</span>{{else}}<span class="pill">public</span>{{end}}
+        </div>
+      {{end}}
+    </div>
+  {{else}}
+    <div class="empty">No repositories.</div>
+  {{end}}
+</div>
+{{end}}

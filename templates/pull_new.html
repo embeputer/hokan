@@ -1,0 +1,21 @@
+{{define "title"}}New pull request — {{.Repo.FullName}}{{end}}
+{{define "content"}}
+{{template "repo-header" .}}
+{{template "repo-tabs" .}}
+<h2>New pull request</h2>
+<form class="stack wide" method="post" action="/{{.Repo.OwnerName}}/{{.Repo.Name}}/pulls">
+  <label>Title <input name="title" required></label>
+  <label>Description <textarea name="description" rows="5"></textarea></label>
+  <label>Source branch
+    <select name="source_branch" required>
+      {{range .Branches}}<option value="{{.}}">{{.}}</option>{{end}}
+    </select>
+  </label>
+  <label>Target branch
+    <select name="target_branch" required>
+      {{range .Branches}}<option value="{{.}}" {{if eq . $.Repo.DefaultBranch}}selected{{end}}>{{.}}</option>{{end}}
+    </select>
+  </label>
+  <button type="submit">Open pull request</button>
+</form>
+{{end}}
