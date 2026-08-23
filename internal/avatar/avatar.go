@@ -35,6 +35,14 @@ func IsInput(err error) bool {
 	return errors.As(err, &e)
 }
 
+func TooLarge(err error) bool {
+	var mb *http.MaxBytesError
+	if errors.As(err, &mb) {
+		return true
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "too large")
+}
+
 func inputf(format string, args ...any) error {
 	return &InputError{Msg: fmt.Sprintf(format, args...)}
 }
@@ -139,11 +147,11 @@ func (s *Service) SaveCustom(userID string, data []byte) error {
 		return err
 	}
 	path := s.CustomPath(userID)
-	tmp := path + ".tmp"
-	f, err := os.Create(tmp)
+	f, err := os.CreateTemp(s.Dir, userID+".*.tmp")
 	if err != nil {
 		return err
 	}
+	tmp := f.Name()
 	err = png.Encode(f, img)
 	closeErr := f.Close()
 	if err != nil {
@@ -222,15 +230,17 @@ func (s *Service) Serve(w http.ResponseWriter, r *http.Request, username string)
 		s.writeSVG(w, FallbackSVG("_", defaultSz))
 		return
 	}
-	if s.Users != nil {
-		u, err := s.Users.GetByUsername(r.Context(), username)
-		if err != nil {
-			s.writeSVG(w, FallbackSVG(username, defaultSz))
-			return
-		}
-		if u.HasAvatar && s.serveFile(w, r, s.CustomPath(u.ID), "image/png") {
-			return
-		}
+	if s.Users == nil {
+		s.writeSVG(w, FallbackSVG(username, defaultSz))
+		return
+	}
+	u, err := s.Users.GetByUsername(r.Context(), username)
+	if err != nil {
+		s.writeSVG(w, FallbackSVG(username, defaultSz))
+		return
+	}
+	if u.HasAvatar && s.serveFile(w, r, s.CustomPath(u.ID), "image/png") {
+		return
 	}
 	s.serveDefault(w, r, username)
 }
@@ -330,13 +340,22 @@ func (s *Service) serveFile(w http.ResponseWriter, r *http.Request, path, conten
 		return true
 	}
 	w.Header().Set("Content-Type", contentType)
+	if strings.HasPrefix(contentType, "image/svg+xml") {
+		lockDownSVG(w)
+	}
 	http.ServeContent(w, r, filepath.Base(path), st.ModTime(), f)
 	return true
+}
+
+func lockDownSVG(w http.ResponseWriter) {
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
 }
 
 func (s *Service) writeSVG(w http.ResponseWriter, svg []byte) {
 	w.Header().Set("Content-Type", "image/svg+xml; charset=utf-8")
 	w.Header().Set("Cache-Control", "public, max-age=0, must-revalidate")
+	lockDownSVG(w)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(svg)
 }

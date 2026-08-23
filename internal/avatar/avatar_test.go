@@ -122,7 +122,9 @@ func TestServeBlobatarThenFallback(t *testing.T) {
 		t.Fatal("expected cache dir")
 	}
 
-	down := New(t.TempDir(), nil)
+	down := New(t.TempDir(), &memUsers{byName: map[string]*store.User{
+		"dave": {ID: "d1", Username: "dave"},
+	}})
 	down.Origin = "http://127.0.0.1:1"
 	down.Client = &http.Client{Timeout: 50 * time.Millisecond}
 	rr2 := httptest.NewRecorder()
@@ -158,8 +160,30 @@ func TestServeUnknownSkipsBlobatar(t *testing.T) {
 	if !bytes.Contains(rr.Body.Bytes(), []byte("<svg")) {
 		t.Fatal("expected fallback svg")
 	}
+	if rr.Header().Get("Content-Security-Policy") != "default-src 'none'; sandbox" {
+		t.Fatalf("csp %q", rr.Header().Get("Content-Security-Policy"))
+	}
 	if _, err := os.Stat(filepath.Join(dir, "cache")); !os.IsNotExist(err) {
 		t.Fatalf("unknown users should not write cache: %v", err)
+	}
+}
+
+func TestServeNilUsersSkipsBlobatar(t *testing.T) {
+	hits := 0
+	blob := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits++
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(blob.Close)
+	svc := New(t.TempDir(), nil)
+	svc.Origin = blob.URL
+	rr := httptest.NewRecorder()
+	svc.Serve(rr, httptest.NewRequest(http.MethodGet, "/avatars/anyone", nil), "anyone")
+	if hits != 0 {
+		t.Fatalf("blobatar hits %d, want 0", hits)
+	}
+	if !bytes.Contains(rr.Body.Bytes(), []byte("<svg")) {
+		t.Fatal("expected fallback svg")
 	}
 }
 

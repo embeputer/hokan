@@ -47,7 +47,13 @@ func startTestServer(t *testing.T) (string, *sqlite.DB, *git.Disk) {
 	t.Cleanup(func() { _ = st.Close() })
 	disk := &git.Disk{Root: filepath.Join(dir, "repos")}
 	access := &auth.Access{Store: st}
+	blob := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		_, _ = io.WriteString(w, `<svg xmlns="http://www.w3.org/2000/svg"></svg>`)
+	}))
+	t.Cleanup(blob.Close)
 	avatars := avatar.New(filepath.Join(dir, "avatars"), st.Users())
+	avatars.Origin = blob.URL
 	h := &api.Handler{Store: st, Disk: disk, Access: access, Config: config.Config{BaseURL: "http://example", AllowSignup: true}, Avatars: avatars}
 	gitHTTP := &git.HTTP{Disk: disk, Access: access, Store: st}
 	r := chi.NewRouter()
