@@ -12,6 +12,12 @@ import (
 func mergeIdent(name, email string) []string {
 	name = strings.TrimSpace(name)
 	email = strings.TrimSpace(email)
+	if strings.ContainsRune(name, 0) {
+		name = ""
+	}
+	if strings.ContainsRune(email, 0) {
+		email = ""
+	}
 	if name == "" {
 		name = "Hokan"
 	}

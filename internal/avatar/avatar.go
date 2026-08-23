@@ -3,6 +3,7 @@ package avatar
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -164,10 +165,22 @@ func (s *Service) RemoveCustom(userID string) error {
 	return nil
 }
 
+func backupPath(path string) string {
+	var b [8]byte
+	_, _ = rand.Read(b[:])
+	return fmt.Sprintf("%s.%x.bak", path, b)
+}
+
+func restoreBackup(backup, path string) error {
+	if err := os.Rename(backup, path); err != nil {
+		return fmt.Errorf("restore previous avatar: %w", err)
+	}
+	return nil
+}
+
 func (s *Service) AttachCustom(ctx context.Context, flags Flags, userID string, data []byte) error {
 	path := s.CustomPath(userID)
-	backup := path + ".bak"
-	_ = os.Remove(backup)
+	backup := backupPath(path)
 	hadPrev := false
 	if _, err := os.Stat(path); err == nil {
 		if err := os.Rename(path, backup); err != nil {
@@ -177,14 +190,18 @@ func (s *Service) AttachCustom(ctx context.Context, flags Flags, userID string, 
 	}
 	if err := s.SaveCustom(userID, data); err != nil {
 		if hadPrev {
-			_ = os.Rename(backup, path)
+			if rerr := restoreBackup(backup, path); rerr != nil {
+				return errors.Join(err, rerr)
+			}
 		}
 		return err
 	}
 	if err := flags.SetHasAvatar(ctx, userID, true); err != nil {
 		_ = os.Remove(path)
 		if hadPrev {
-			_ = os.Rename(backup, path)
+			if rerr := restoreBackup(backup, path); rerr != nil {
+				return errors.Join(err, rerr)
+			}
 		}
 		return err
 	}
