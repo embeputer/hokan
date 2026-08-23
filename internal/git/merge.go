@@ -26,6 +26,12 @@ func MergeCommit(gitDir, source, target, message string) (string, error) {
 
 	merge := exec.Command("git", "merge", "--no-ff", "--no-edit", "-m", message, source)
 	merge.Dir = tmp
+	merge.Env = append(os.Environ(),
+		"GIT_AUTHOR_NAME=Hokan",
+		"GIT_AUTHOR_EMAIL=hokan@localhost",
+		"GIT_COMMITTER_NAME=Hokan",
+		"GIT_COMMITTER_EMAIL=hokan@localhost",
+	)
 	out, err := merge.CombinedOutput()
 	if err != nil {
 		_ = exec.Command("git", "-C", tmp, "merge", "--abort").Run()

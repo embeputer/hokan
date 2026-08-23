@@ -422,7 +422,7 @@ form.stack.wide { max-width: 40rem; }
 }
 .feature-card h3 {
   font-size: 0.95rem;
-  font-weight: 650;
+  font-weight: 600;
   color: var(--text);
   text-transform: none;
   letter-spacing: 0;

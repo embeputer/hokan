@@ -37,41 +37,41 @@ type Server struct {
 type page struct {
 	User        *store.User
 	AllowSignup bool
-	Flash      string
-	FlashType  string
-	Repo       *store.Repo
-	Repos      []store.Repo
-	Keys       []store.SSHKey
-	Tokens     []store.Token
-	NewToken   string
-	CloneHTTP  string
-	CloneSSH   string
-	Entries    []git.TreeEntry
-	Parent     string
-	PathPrefix string
-	Ref        string
-	Query      string
-	ReadmeHTML template.HTML
-	BlobHTML   template.HTML
-	Commits    []git.Commit
-	Branches   []string
-	Hits       []git.SearchHit
-	Pulls      []store.PullRequest
-	PR         *store.PullRequest
-	Diff       string
-	DiffHTML   template.HTML
-	Comments   []store.Comment
-	MergeError string
-	Issues     []store.Issue
-	Issue      *store.Issue
-	Jobs       []store.CIJob
-	Job        *store.CIJob
-	Orgs       []store.Org
-	Org        *store.Org
-	Teams      []store.Team
-	Tab        string
-	BlobPath   string
-	Profile    *store.User
+	Flash       string
+	FlashType   string
+	Repo        *store.Repo
+	Repos       []store.Repo
+	Keys        []store.SSHKey
+	Tokens      []store.Token
+	NewToken    string
+	CloneHTTP   string
+	CloneSSH    string
+	Entries     []git.TreeEntry
+	Parent      string
+	PathPrefix  string
+	Ref         string
+	Query       string
+	ReadmeHTML  template.HTML
+	BlobHTML    template.HTML
+	Commits     []git.Commit
+	Branches    []string
+	Hits        []git.SearchHit
+	Pulls       []store.PullRequest
+	PR          *store.PullRequest
+	Diff        string
+	DiffHTML    template.HTML
+	Comments    []store.Comment
+	MergeError  string
+	Issues      []store.Issue
+	Issue       *store.Issue
+	Jobs        []store.CIJob
+	Job         *store.CIJob
+	Orgs        []store.Org
+	Org         *store.Org
+	Teams       []store.Team
+	Tab         string
+	BlobPath    string
+	Profile     *store.User
 }
 
 func (s *Server) Routes(r chi.Router) {
