@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"image"
+	"image/color"
 	"image/png"
 	"io"
 	"net/http"
@@ -166,5 +167,38 @@ func TestSaveRejectsNonImage(t *testing.T) {
 	svc := New(t.TempDir(), nil)
 	if err := svc.SaveCustom("u", []byte("not-an-image")); err == nil {
 		t.Fatal("expected error")
+	}
+}
+
+type errFlags struct{ err error }
+
+func (f errFlags) SetHasAvatar(context.Context, string, bool) error { return f.err }
+
+func TestAttachCustomRestoresPrevious(t *testing.T) {
+	dir := t.TempDir()
+	svc := New(dir, nil)
+	first := testPNG(t)
+	if err := svc.SaveCustom("u1", first); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(svc.CustomPath("u1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	img := image.NewRGBA(image.Rect(0, 0, 8, 8))
+	img.Set(0, 0, color.White)
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, img); err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.AttachCustom(context.Background(), errFlags{err: io.ErrUnexpectedEOF}, "u1", buf.Bytes()); err == nil {
+		t.Fatal("expected flag error")
+	}
+	after, err := os.ReadFile(svc.CustomPath("u1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Fatal("previous custom avatar should be restored")
 	}
 }

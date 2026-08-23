@@ -198,7 +198,7 @@ func (h *Handler) mergePR(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	msg := "Merge pull request #" + strconv.Itoa(pr.Number) + " from " + pr.SourceBranch
-	sha, err := git.MergeCommit(h.gitDir(repo), pr.SourceBranch, pr.TargetBranch, msg)
+	sha, err := git.MergeCommit(h.gitDir(repo), pr.SourceBranch, pr.TargetBranch, msg, u.Username, u.Email)
 	if err != nil {
 		if errors.Is(err, store.ErrMergeConflict) {
 			writeError(w, http.StatusConflict, "merge conflict: the branches do not merge cleanly; resolve locally and push, then retry")

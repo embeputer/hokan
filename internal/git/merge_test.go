@@ -44,7 +44,7 @@ func TestMergeCommitAndConflict(t *testing.T) {
 	runGit(t, work, "commit", "-m", "main only")
 	runGit(t, work, "push", "origin", "main")
 
-	sha, err := MergeCommit(bare, "feature", "main", "merge feature")
+	sha, err := MergeCommit(bare, "feature", "main", "merge feature", "A", "a@b.c")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -71,7 +71,7 @@ func TestMergeCommitAndConflict(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = MergeCommit(bare, "c2", "c1", "should conflict")
+	_, err = MergeCommit(bare, "c2", "c1", "should conflict", "A", "a@b.c")
 	if err == nil {
 		t.Fatal("expected merge conflict")
 	}

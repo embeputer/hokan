@@ -165,21 +165,38 @@ func (s *Service) RemoveCustom(userID string) error {
 }
 
 func (s *Service) AttachCustom(ctx context.Context, flags Flags, userID string, data []byte) error {
+	path := s.CustomPath(userID)
+	backup := path + ".bak"
+	_ = os.Remove(backup)
+	hadPrev := false
+	if _, err := os.Stat(path); err == nil {
+		if err := os.Rename(path, backup); err != nil {
+			return err
+		}
+		hadPrev = true
+	}
 	if err := s.SaveCustom(userID, data); err != nil {
+		if hadPrev {
+			_ = os.Rename(backup, path)
+		}
 		return err
 	}
 	if err := flags.SetHasAvatar(ctx, userID, true); err != nil {
-		_ = s.RemoveCustom(userID)
+		_ = os.Remove(path)
+		if hadPrev {
+			_ = os.Rename(backup, path)
+		}
 		return err
 	}
+	_ = os.Remove(backup)
 	return nil
 }
 
 func (s *Service) DetachCustom(ctx context.Context, flags Flags, userID string) error {
-	if err := s.RemoveCustom(userID); err != nil {
+	if err := flags.SetHasAvatar(ctx, userID, false); err != nil {
 		return err
 	}
-	return flags.SetHasAvatar(ctx, userID, false)
+	return s.RemoveCustom(userID)
 }
 
 func (s *Service) Serve(w http.ResponseWriter, r *http.Request, username string) {
