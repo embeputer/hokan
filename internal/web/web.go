@@ -35,7 +35,8 @@ type Server struct {
 }
 
 type page struct {
-	User       *store.User
+	User        *store.User
+	AllowSignup bool
 	Flash      string
 	FlashType  string
 	Repo       *store.Repo
@@ -138,6 +139,7 @@ var tmplFuncs = template.FuncMap{
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, pageName string, p page) {
 	p.User = auth.UserFrom(r.Context())
+	p.AllowSignup = s.Config.AllowSignup
 	if c, err := r.Cookie("flash"); err == nil {
 		p.Flash = c.Value
 		p.FlashType = "ok"
@@ -171,11 +173,17 @@ func (s *Server) setSession(w http.ResponseWriter, raw string) {
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
-	uid := ""
-	if u := auth.UserFrom(r.Context()); u != nil {
-		uid = u.ID
+	u := auth.UserFrom(r.Context())
+	if u == nil {
+		repos, err := s.Store.Repos().ListVisible(r.Context(), "")
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		s.render(w, r, "landing.html", page{Repos: repos})
+		return
 	}
-	repos, err := s.Store.Repos().ListVisible(r.Context(), uid)
+	repos, err := s.Store.Repos().ListVisible(r.Context(), u.ID)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return

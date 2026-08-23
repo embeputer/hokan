@@ -14,8 +14,8 @@
 <header class="nav">
   <a class="brand" href="/"><span class="brand-mark"></span><span class="brand-name">Hokan</span></a>
   <nav class="nav-links">
-    <a href="/">Repos</a>
     {{if .User}}
+      <a href="/">Repos</a>
       <a href="/orgs">Orgs</a>
       <details class="menu">
         <summary>{{.User.Username}}</summary>
@@ -27,8 +27,9 @@
         </div>
       </details>
     {{else}}
+      <a href="/#explore">Explore</a>
       <a href="/login">Log in</a>
-      <a class="btn" href="/signup" style="color:#1a1408">Sign up</a>
+      {{if .AllowSignup}}<a class="btn" href="/signup" style="color:#1a1408">Sign up</a>{{end}}
     {{end}}
   </nav>
 </header>

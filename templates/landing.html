@@ -1,0 +1,82 @@
+{{define "title"}}Hokan — Self-hosted Git forge{{end}}
+{{define "content"}}
+<section class="landing-hero">
+  <div class="landing-brand">
+    <span class="landing-mark" aria-hidden="true"></span>
+    <span class="landing-name">Hokan</span>
+  </div>
+  <h1 class="landing-title">A self-hosted Git forge</h1>
+  <p class="landing-lede">Host repositories, review pull requests, track issues, and run CI — all on your own infrastructure, with no required third-party services.</p>
+  <div class="landing-cta">
+    {{if .AllowSignup}}<a class="btn" href="/signup">Create an account</a>{{end}}
+    <a class="btn ghost" href="/login">Log in</a>
+    {{if .Repos}}<a class="btn ghost" href="#explore">Explore repositories</a>{{end}}
+  </div>
+</section>
+
+<section class="landing-features">
+  <h2>What you get</h2>
+  <div class="feature-grid">
+    <div class="feature-card">
+      <div class="feature-icon" aria-hidden="true">◇</div>
+      <h3>Git hosting</h3>
+      <p>Clone and push over HTTP or SSH. Browse code, branches, commits, and search — right in the browser.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" aria-hidden="true">⇄</div>
+      <h3>Pull requests</h3>
+      <p>Propose changes, review diffs inline, discuss in threads, and merge when ready.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" aria-hidden="true">◎</div>
+      <h3>Issues</h3>
+      <p>Track bugs, tasks, and discussions alongside your code. Open, close, and comment in one place.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" aria-hidden="true">▶</div>
+      <h3>Built-in CI</h3>
+      <p>Run pipelines on push and pull requests with a lightweight runner — no external CI subscription needed.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" aria-hidden="true">⬡</div>
+      <h3>Organizations</h3>
+      <p>Group repositories under teams, manage access, and collaborate at scale on a single instance.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" aria-hidden="true">⌂</div>
+      <h3>Self-hosted</h3>
+      <p>Single Go binary, SQLite storage, and bare Git repos on disk. You own the data and the deployment.</p>
+    </div>
+  </div>
+</section>
+
+{{if .Repos}}
+<section class="landing-explore" id="explore">
+  <h2>Public repositories</h2>
+  <p class="landing-explore-lede">Browse open-source projects hosted on this instance.</p>
+  <div class="list">
+    {{range .Repos}}
+      <div class="card repo-card">
+        <div>
+          {{if eq .OwnerType "org"}}<a href="/orgs/{{.OwnerName}}">{{.OwnerName}}</a>{{else}}<a href="/{{.OwnerName}}">{{.OwnerName}}</a>{{end}}<span class="faint"> / </span><a href="/{{.OwnerName}}/{{.Name}}">{{.Name}}</a>
+        </div>
+        <span><span class="pill">public</span></span>
+      </div>
+    {{end}}
+  </div>
+</section>
+{{else}}
+<section class="landing-explore" id="explore">
+  <h2>Public repositories</h2>
+  <p class="landing-explore-lede">No public repositories yet.{{if .AllowSignup}} Create an account to host the first one.{{end}}</p>
+</section>
+{{end}}
+
+<section class="landing-footer-cta">
+  <p>Ready to start?</p>
+  <div class="landing-cta">
+    {{if .AllowSignup}}<a class="btn" href="/signup">Sign up</a>{{end}}
+    <a class="btn ghost" href="/login">Log in</a>
+  </div>
+</section>
+{{end}}
