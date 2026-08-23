@@ -2,10 +2,12 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/hokan/hokan/internal/auth"
+	"github.com/hokan/hokan/internal/avatar"
 	"github.com/hokan/hokan/internal/config"
 	"github.com/hokan/hokan/internal/git"
 	"github.com/hokan/hokan/internal/store"
@@ -16,6 +18,7 @@ type Handler struct {
 	Disk      *git.Disk
 	Access    *auth.Access
 	Config    config.Config
+	Avatars   *avatar.Service
 	OnPR      func(repo *store.Repo, pr *store.PullRequest, sha string)
 	EnqueueCI func(repo *store.Repo, sha string, pr *store.PullRequest)
 }
@@ -31,6 +34,8 @@ func (h *Handler) Router() http.Handler {
 			return auth.RequireUser(next)
 		})
 		r.Get("/user", h.currentUser)
+		r.Post("/user/avatar", h.uploadAvatar)
+		r.Delete("/user/avatar", h.deleteAvatar)
 		r.Get("/user/keys", h.listKeys)
 		r.Post("/user/keys", h.addKey)
 		r.Delete("/user/keys/{id}", h.deleteKey)
@@ -110,9 +115,15 @@ func (h *Handler) gitDir(repo *store.Repo) string {
 	return h.Disk.Path(repo.OwnerName, repo.Name)
 }
 
-func userJSON(u *store.User) map[string]any {
+func (h *Handler) avatarURL(username string) string {
+	base := strings.TrimRight(h.Config.BaseURL, "/")
+	return base + "/avatars/" + url.PathEscape(username)
+}
+
+func (h *Handler) userJSON(u *store.User) map[string]any {
 	return map[string]any{
 		"id": u.ID, "username": u.Username, "email": u.Email, "created_at": u.CreatedAt,
+		"avatar_url": h.avatarURL(u.Username), "has_avatar": u.HasAvatar,
 	}
 }
 
@@ -125,7 +136,7 @@ func repoJSON(r *store.Repo) map[string]any {
 }
 
 func (h *Handler) currentUser(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, 200, userJSON(auth.UserFrom(r.Context())))
+	writeJSON(w, 200, h.userJSON(auth.UserFrom(r.Context())))
 }
 
 func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
@@ -136,6 +147,7 @@ func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 	}
 	out := map[string]any{
 		"id": u.ID, "username": u.Username, "created_at": u.CreatedAt,
+		"avatar_url": h.avatarURL(u.Username), "has_avatar": u.HasAvatar,
 	}
 	if me := auth.UserFrom(r.Context()); me != nil && me.ID == u.ID {
 		out["email"] = u.Email

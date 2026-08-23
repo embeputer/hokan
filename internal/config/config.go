@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -27,6 +28,10 @@ func Load() Config {
 		AllowSignup: envBool("HOKAN_ALLOW_SIGNUP", true),
 	}
 	return c
+}
+
+func (c Config) AvatarDir() string {
+	return filepath.Join(filepath.Dir(c.DBPath), "avatars")
 }
 
 func env(key, fallback string) string {

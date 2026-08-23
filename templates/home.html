@@ -8,8 +8,11 @@
   <div class="list">
     {{range .Repos}}
       <div class="card repo-card">
-        <div>
-          {{if eq .OwnerType "org"}}<a href="/orgs/{{.OwnerName}}">{{.OwnerName}}</a>{{else}}<a href="/{{.OwnerName}}">{{.OwnerName}}</a>{{end}}<span class="faint"> / </span><a href="/{{.OwnerName}}/{{.Name}}">{{.Name}}</a>
+        <div class="repo-card-main">
+          <img class="avatar avatar-sm" src="{{avatarURL .OwnerName}}" alt="" width="24" height="24">
+          <div>
+            {{if eq .OwnerType "org"}}<a href="/orgs/{{.OwnerName}}">{{.OwnerName}}</a>{{else}}<a href="/{{.OwnerName}}">{{.OwnerName}}</a>{{end}}<span class="faint"> / </span><a href="/{{.OwnerName}}/{{.Name}}">{{.Name}}</a>
+          </div>
         </div>
         <span>
           {{if .IsPrivate}}<span class="pill pill-private">private</span>{{else}}<span class="pill">public</span>{{end}}

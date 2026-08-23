@@ -24,7 +24,9 @@
 <div class="thread">
   {{range .Comments}}
     <div class="card comment">
-      <div class="meta"><strong><a href="/{{.AuthorName}}">{{.AuthorName}}</a></strong> <span class="muted">{{.CreatedAt.Format "2006-01-02 15:04"}}</span>
+      <div class="meta">
+        <img class="avatar avatar-md" src="{{avatarURL .AuthorName}}" alt="" width="32" height="32">
+        <strong><a href="/{{.AuthorName}}">{{.AuthorName}}</a></strong> <span class="muted">{{.CreatedAt.Format "2006-01-02 15:04"}}</span>
         {{if .FilePath}}<span class="muted"> · {{.FilePath}}{{if .Line}}:{{.Line}}{{end}}</span>{{end}}
       </div>
       <p>{{.Body}}</p>

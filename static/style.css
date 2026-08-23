@@ -75,6 +75,11 @@ code, kbd { font-family: var(--mono); font-size: 0.9em; }
   list-style: none;
 }
 .nav-links > a:hover, .nav-links summary:hover { color: var(--text); background: var(--panel-2); }
+.nav-links summary.nav-user {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
 .menu { position: relative; }
 .menu summary { list-style: none; }
 .menu summary::-webkit-details-marker { display: none; }
@@ -266,7 +271,7 @@ form.stack.wide { max-width: 40rem; }
 
 .thread { display: flex; flex-direction: column; gap: 10px; }
 .comment { }
-.comment .meta { font-size: 0.85rem; margin-bottom: 6px; }
+.comment .meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.85rem; margin-bottom: 6px; }
 
 .merge-box {
   display: flex;
@@ -338,14 +343,15 @@ form.stack.wide { max-width: 40rem; }
   width: 72px;
   height: 72px;
   border-radius: 18px;
-  background: linear-gradient(135deg, var(--gold), #8a5a18);
-  color: #1a1408;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 1.6rem;
-  text-transform: uppercase;
+  object-fit: cover;
+  background: var(--panel-2);
+  display: block;
+  flex-shrink: 0;
 }
+.avatar-sm { width: 24px; height: 24px; border-radius: 8px; }
+.avatar-md { width: 32px; height: 32px; border-radius: 10px; }
+.avatar-preview { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; }
+.repo-card-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .empty {
   text-align: center;
   padding: 40px 16px;

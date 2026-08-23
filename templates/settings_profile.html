@@ -1,0 +1,25 @@
+{{define "title"}}Profile — Hokan{{end}}
+{{define "content"}}
+<div class="settings">
+  {{template "settings-nav" .}}
+  <div>
+    <h1>Profile</h1>
+    <div class="avatar-preview">
+      <img class="avatar" src="{{avatarURL .User.Username}}" alt="{{.User.Username}}" width="72" height="72">
+      <div>
+        <p class="muted">{{if .User.HasAvatar}}Custom photo{{else}}Default blobatar from your username{{end}}</p>
+        <p class="muted">Defaults come from blobatar.dev, generated from your username. A custom photo replaces that default.</p>
+      </div>
+    </div>
+    <form class="stack" method="post" action="/settings/profile" enctype="multipart/form-data">
+      <label>Photo <input type="file" name="avatar" accept="image/png,image/jpeg,image/gif" required></label>
+      <button type="submit">Upload photo</button>
+    </form>
+    {{if .User.HasAvatar}}
+      <form method="post" action="/settings/profile/delete" style="margin-top:12px">
+        <button class="secondary" type="submit">Remove photo</button>
+      </form>
+    {{end}}
+  </div>
+</div>
+{{end}}

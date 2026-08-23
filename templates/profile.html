@@ -2,13 +2,13 @@
 {{define "content"}}
 <div class="profile">
   <div class="profile-hero">
-    <div class="avatar" aria-hidden="true">{{initial .Profile.Username}}</div>
+    <img class="avatar" src="{{avatarURL .Profile.Username}}" alt="{{.Profile.Username}}" width="72" height="72">
     <div>
       <h1>{{.Profile.Username}}</h1>
       <p class="muted">Joined {{.Profile.CreatedAt.Format "2 Jan 2006"}}</p>
       {{if and $.User (eq $.User.ID .Profile.ID)}}
         <p class="muted">{{.Profile.Email}}</p>
-        <p><a href="/settings/keys">Settings</a></p>
+        <p><a href="/settings/profile">Settings</a></p>
       {{end}}
     </div>
   </div>
