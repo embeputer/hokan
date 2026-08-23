@@ -168,6 +168,40 @@ func TestServeUnknownSkipsBlobatar(t *testing.T) {
 	}
 }
 
+func TestServeCachedSVGNotModifiedKeepsLockdownHeaders(t *testing.T) {
+	dir := t.TempDir()
+	svc := New(dir, &memUsers{byName: map[string]*store.User{
+		"erin": {ID: "e1", Username: "erin"},
+	}})
+	if err := writeFileAtomic(cachePath(dir, "erin"), []byte(`<svg xmlns="http://www.w3.org/2000/svg"></svg>`)); err != nil {
+		t.Fatal(err)
+	}
+
+	first := httptest.NewRecorder()
+	svc.Serve(first, httptest.NewRequest(http.MethodGet, "/avatars/erin", nil), "erin")
+	if first.Code != 200 {
+		t.Fatalf("status %d", first.Code)
+	}
+	etag := first.Header().Get("ETag")
+	if etag == "" {
+		t.Fatal("missing etag")
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/avatars/erin", nil)
+	req.Header.Set("If-None-Match", etag)
+	rr := httptest.NewRecorder()
+	svc.Serve(rr, req, "erin")
+	if rr.Code != http.StatusNotModified {
+		t.Fatalf("status %d, want 304", rr.Code)
+	}
+	if got := rr.Header().Get("Content-Security-Policy"); got != "default-src 'none'; sandbox" {
+		t.Fatalf("csp %q", got)
+	}
+	if got := rr.Header().Get("X-Content-Type-Options"); got != "nosniff" {
+		t.Fatalf("nosniff %q", got)
+	}
+}
+
 func TestServeNilUsersSkipsBlobatar(t *testing.T) {
 	hits := 0
 	blob := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

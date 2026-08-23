@@ -335,14 +335,14 @@ func (s *Service) serveFile(w http.ResponseWriter, r *http.Request, path, conten
 	etag := fmt.Sprintf(`"%x-%x"`, st.ModTime().UnixNano(), st.Size())
 	w.Header().Set("ETag", etag)
 	w.Header().Set("Cache-Control", "public, max-age=0, must-revalidate")
+	if strings.HasPrefix(contentType, "image/svg+xml") {
+		lockDownSVG(w)
+	}
 	if match := r.Header.Get("If-None-Match"); match == etag {
 		w.WriteHeader(http.StatusNotModified)
 		return true
 	}
 	w.Header().Set("Content-Type", contentType)
-	if strings.HasPrefix(contentType, "image/svg+xml") {
-		lockDownSVG(w)
-	}
 	http.ServeContent(w, r, filepath.Base(path), st.ModTime(), f)
 	return true
 }
