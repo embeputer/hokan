@@ -150,7 +150,10 @@ func TestUserHasAvatar(t *testing.T) {
 	if err := db.Users().SetHasAvatar(ctx, u.ID, false); err != nil {
 		t.Fatal(err)
 	}
-	got, _ = db.Users().GetByID(ctx, u.ID)
+	got, err = db.Users().GetByID(ctx, u.ID)
+	if err != nil {
+		t.Fatalf("get by id: %v", err)
+	}
 	if got.HasAvatar {
 		t.Fatal("expected has_avatar false")
 	}

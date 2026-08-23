@@ -292,12 +292,12 @@ func (s *Server) uploadAvatar(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "could not read file", 400)
 		return
 	}
-	if err := s.Avatars.SaveCustom(u.ID, data); err != nil {
-		http.Error(w, err.Error(), 400)
-		return
-	}
-	if err := s.Store.Users().SetHasAvatar(r.Context(), u.ID, true); err != nil {
-		http.Error(w, err.Error(), 500)
+	if err := s.Avatars.AttachCustom(r.Context(), s.Store.Users(), u.ID, data); err != nil {
+		code := 500
+		if avatar.IsInput(err) {
+			code = 400
+		}
+		http.Error(w, err.Error(), code)
 		return
 	}
 	s.flash(w, "Avatar updated")
@@ -309,10 +309,14 @@ func (s *Server) deleteAvatar(w http.ResponseWriter, r *http.Request) {
 	if u == nil {
 		return
 	}
-	if s.Avatars != nil {
-		_ = s.Avatars.RemoveCustom(u.ID)
+	if s.Avatars == nil {
+		http.Error(w, "avatars unavailable", 500)
+		return
 	}
-	_ = s.Store.Users().SetHasAvatar(r.Context(), u.ID, false)
+	if err := s.Avatars.DetachCustom(r.Context(), s.Store.Users(), u.ID); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 	s.flash(w, "Avatar removed")
 	http.Redirect(w, r, "/settings/profile", http.StatusSeeOther)
 }

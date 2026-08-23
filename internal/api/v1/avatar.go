@@ -30,12 +30,12 @@ func (h *Handler) uploadAvatar(w http.ResponseWriter, r *http.Request) {
 		writeError(w, 400, "could not read file")
 		return
 	}
-	if err := h.Avatars.SaveCustom(u.ID, data); err != nil {
-		writeError(w, 400, err.Error())
-		return
-	}
-	if err := h.Store.Users().SetHasAvatar(r.Context(), u.ID, true); err != nil {
-		mapStoreError(w, err)
+	if err := h.Avatars.AttachCustom(r.Context(), h.Store.Users(), u.ID, data); err != nil {
+		if avatar.IsInput(err) {
+			writeError(w, 400, err.Error())
+			return
+		}
+		writeError(w, 500, err.Error())
 		return
 	}
 	u.HasAvatar = true
@@ -44,10 +44,11 @@ func (h *Handler) uploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) deleteAvatar(w http.ResponseWriter, r *http.Request) {
 	u := auth.UserFrom(r.Context())
-	if h.Avatars != nil {
-		_ = h.Avatars.RemoveCustom(u.ID)
+	if h.Avatars == nil {
+		writeError(w, 500, "avatars unavailable")
+		return
 	}
-	if err := h.Store.Users().SetHasAvatar(r.Context(), u.ID, false); err != nil {
+	if err := h.Avatars.DetachCustom(r.Context(), h.Store.Users(), u.ID); err != nil {
 		mapStoreError(w, err)
 		return
 	}

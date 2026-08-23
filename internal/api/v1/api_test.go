@@ -470,4 +470,41 @@ func TestAvatarUploadAndDefault(t *testing.T) {
 	if bytes.Contains(custom, []byte("<svg")) {
 		t.Fatal("custom avatar should not be svg")
 	}
+
+	del, err := http.NewRequest("DELETE", base+"/api/v1/user/avatar", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	del.Header.Set("Authorization", "Bearer "+token)
+	gone, err := http.DefaultClient.Do(del)
+	if err != nil {
+		t.Fatal(err)
+	}
+	goneBody, _ := io.ReadAll(gone.Body)
+	gone.Body.Close()
+	if gone.StatusCode != 200 {
+		t.Fatalf("delete %s: %s", gone.Status, goneBody)
+	}
+
+	res = doJSON(t, "GET", base+"/api/v1/user", token, nil, 200)
+	if err := json.NewDecoder(res.Body).Decode(&me); err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if me.Data["has_avatar"] != false {
+		t.Fatalf("has_avatar after delete: %v", me.Data["has_avatar"])
+	}
+
+	imgRes, err = http.Get(base + "/avatars/pixie")
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, _ := io.ReadAll(imgRes.Body)
+	imgRes.Body.Close()
+	if imgRes.StatusCode != 200 {
+		t.Fatalf("default after delete %s", imgRes.Status)
+	}
+	if !bytes.Contains(after, []byte("<svg")) {
+		t.Fatal("expected svg after delete")
+	}
 }

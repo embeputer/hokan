@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"hash/fnv"
 	"image"
@@ -22,6 +23,25 @@ import (
 
 	"github.com/hokan/hokan/internal/store"
 )
+
+// InputError is a client-side problem (bad image), not a storage failure.
+type InputError struct{ Msg string }
+
+func (e *InputError) Error() string { return e.Msg }
+
+func IsInput(err error) bool {
+	var e *InputError
+	return errors.As(err, &e)
+}
+
+func inputf(format string, args ...any) error {
+	return &InputError{Msg: fmt.Sprintf(format, args...)}
+}
+
+// Flags updates users.has_avatar.
+type Flags interface {
+	SetHasAvatar(ctx context.Context, userID string, has bool) error
+}
 
 // Lookup finds a user by username. *store.UserStore satisfies this.
 type Lookup interface {
@@ -98,21 +118,21 @@ func cachePath(dir, username string) string {
 
 func (s *Service) SaveCustom(userID string, data []byte) error {
 	if len(data) == 0 {
-		return fmt.Errorf("empty image")
+		return inputf("empty image")
 	}
 	if len(data) > MaxBytes {
-		return fmt.Errorf("image too large (max %d bytes)", MaxBytes)
+		return inputf("image too large (max %d bytes)", MaxBytes)
 	}
 	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
 	if err != nil {
-		return fmt.Errorf("not a supported image (png, jpeg, gif)")
+		return inputf("not a supported image (png, jpeg, gif)")
 	}
 	if cfg.Width < 1 || cfg.Height < 1 || cfg.Width > maxDim || cfg.Height > maxDim {
-		return fmt.Errorf("image dimensions must be between 1 and %d", maxDim)
+		return inputf("image dimensions must be between 1 and %d", maxDim)
 	}
 	img, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return fmt.Errorf("invalid image")
+		return inputf("invalid image")
 	}
 	if err := os.MkdirAll(s.Dir, 0o755); err != nil {
 		return err
@@ -144,6 +164,24 @@ func (s *Service) RemoveCustom(userID string) error {
 	return nil
 }
 
+func (s *Service) AttachCustom(ctx context.Context, flags Flags, userID string, data []byte) error {
+	if err := s.SaveCustom(userID, data); err != nil {
+		return err
+	}
+	if err := flags.SetHasAvatar(ctx, userID, true); err != nil {
+		_ = s.RemoveCustom(userID)
+		return err
+	}
+	return nil
+}
+
+func (s *Service) DetachCustom(ctx context.Context, flags Flags, userID string) error {
+	if err := s.RemoveCustom(userID); err != nil {
+		return err
+	}
+	return flags.SetHasAvatar(ctx, userID, false)
+}
+
 func (s *Service) Serve(w http.ResponseWriter, r *http.Request, username string) {
 	username = strings.TrimSpace(username)
 	if username == "" {
@@ -151,10 +189,13 @@ func (s *Service) Serve(w http.ResponseWriter, r *http.Request, username string)
 		return
 	}
 	if s.Users != nil {
-		if u, err := s.Users.GetByUsername(r.Context(), username); err == nil && u.HasAvatar {
-			if s.serveFile(w, r, s.CustomPath(u.ID), "image/png") {
-				return
-			}
+		u, err := s.Users.GetByUsername(r.Context(), username)
+		if err != nil {
+			s.writeSVG(w, FallbackSVG(username, defaultSz))
+			return
+		}
+		if u.HasAvatar && s.serveFile(w, r, s.CustomPath(u.ID), "image/png") {
+			return
 		}
 	}
 	s.serveDefault(w, r, username)
@@ -166,8 +207,7 @@ func (s *Service) serveDefault(w http.ResponseWriter, r *http.Request, username 
 		return
 	}
 	if svg, ok := s.fetchBlobatar(r.Context(), username); ok {
-		_ = os.MkdirAll(filepath.Dir(cpath), 0o755)
-		_ = os.WriteFile(cpath, svg, 0o644)
+		_ = writeFileAtomic(cpath, svg)
 		s.writeSVG(w, svg)
 		return
 	}
@@ -198,8 +238,9 @@ func (s *Service) fetchBlobatar(ctx context.Context, username string) ([]byte, b
 		}
 		return nil, false
 	}
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 256<<10))
-	if err != nil || len(body) == 0 {
+	const maxSVG = 256 << 10
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxSVG+1))
+	if err != nil || len(body) == 0 || len(body) > maxSVG {
 		return nil, false
 	}
 	ct := resp.Header.Get("Content-Type")
@@ -207,6 +248,28 @@ func (s *Service) fetchBlobatar(ctx context.Context, username string) ([]byte, b
 		return nil, false
 	}
 	return body, true
+}
+
+func writeFileAtomic(path string, data []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	f, err := os.CreateTemp(filepath.Dir(path), ".avatar-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmp := f.Name()
+	_, err = f.Write(data)
+	cerr := f.Close()
+	if err != nil {
+		_ = os.Remove(tmp)
+		return err
+	}
+	if cerr != nil {
+		_ = os.Remove(tmp)
+		return cerr
+	}
+	return os.Rename(tmp, path)
 }
 
 func (s *Service) markDown() {
