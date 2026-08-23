@@ -35,6 +35,7 @@
 
 {{define "settings-nav"}}
 <nav class="settings-nav">
+  <a href="/settings/profile" class="{{if eq .Tab "profile"}}active{{end}}">Profile</a>
   <a href="/settings/keys" class="{{if eq .Tab "keys"}}active{{end}}">SSH keys</a>
   <a href="/settings/tokens" class="{{if eq .Tab "tokens"}}active{{end}}">Tokens</a>
 </nav>

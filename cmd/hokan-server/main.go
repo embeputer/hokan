@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	api "github.com/hokan/hokan/internal/api/v1"
 	"github.com/hokan/hokan/internal/auth"
+	"github.com/hokan/hokan/internal/avatar"
 	"github.com/hokan/hokan/internal/ci"
 	"github.com/hokan/hokan/internal/config"
 	"github.com/hokan/hokan/internal/git"
@@ -63,13 +64,21 @@ func main() {
 	access := &auth.Access{Store: st}
 	ciSvc := &ci.Service{Store: st, Disk: disk, Log: log}
 
+	if err := os.MkdirAll(cfg.AvatarDir(), 0o755); err != nil {
+		log.Error("avatar dir", "err", err)
+		os.Exit(1)
+	}
+
+	avatars := avatar.New(cfg.AvatarDir(), st.Users())
+
 	gitHTTP := &git.HTTP{Disk: disk, Access: access, Store: st, OnPush: ciSvc.OnPush}
 	apiH := &api.Handler{
-		Store:  st,
-		Disk:   disk,
-		Access: access,
-		Config: cfg,
-		OnPR:   ciSvc.OnPR,
+		Store:   st,
+		Disk:    disk,
+		Access:  access,
+		Config:  cfg,
+		Avatars: avatars,
+		OnPR:    ciSvc.OnPR,
 		EnqueueCI: func(repo *store.Repo, sha string, pr *store.PullRequest) {
 			ciSvc.Enqueue(context.Background(), repo, sha, pr, "push")
 		},
@@ -95,7 +104,7 @@ func main() {
 		_, _ = w.Write([]byte("ok"))
 	})
 	r.Mount("/api/v1", apiH.Router())
-	webS := &web.Server{Store: st, Disk: disk, Access: access, Config: cfg, OnPR: ciSvc.OnPR}
+	webS := &web.Server{Store: st, Disk: disk, Access: access, Config: cfg, Avatars: avatars, OnPR: ciSvc.OnPR}
 	webS.Routes(r)
 
 	sshSrv := &git.SSH{

@@ -18,9 +18,13 @@
     {{if .User}}
       <a href="/orgs">Orgs</a>
       <details class="menu">
-        <summary>{{.User.Username}}</summary>
+        <summary class="nav-user">
+          <img class="avatar avatar-sm" src="{{avatarURL .User.Username}}" alt="" width="24" height="24">
+          {{.User.Username}}
+        </summary>
         <div class="menu-list">
           <a href="/{{.User.Username}}">Profile</a>
+          <a href="/settings/profile">Settings</a>
           <a href="/settings/keys">SSH keys</a>
           <a href="/settings/tokens">Tokens</a>
           <a href="/logout">Log out</a>
