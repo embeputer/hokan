@@ -9,7 +9,24 @@ import (
 	"github.com/hokan/hokan/internal/store"
 )
 
-func MergeCommit(gitDir, source, target, message string) (string, error) {
+func mergeIdent(name, email string) []string {
+	name = strings.TrimSpace(name)
+	email = strings.TrimSpace(email)
+	if name == "" {
+		name = "Hokan"
+	}
+	if email == "" {
+		email = "hokan@localhost"
+	}
+	return []string{
+		"GIT_AUTHOR_NAME=" + name,
+		"GIT_AUTHOR_EMAIL=" + email,
+		"GIT_COMMITTER_NAME=" + name,
+		"GIT_COMMITTER_EMAIL=" + email,
+	}
+}
+
+func MergeCommit(gitDir, source, target, message, authorName, authorEmail string) (string, error) {
 	tmp, err := os.MkdirTemp("", "hokan-merge-*")
 	if err != nil {
 		return "", err
@@ -26,12 +43,7 @@ func MergeCommit(gitDir, source, target, message string) (string, error) {
 
 	merge := exec.Command("git", "merge", "--no-ff", "--no-edit", "-m", message, source)
 	merge.Dir = tmp
-	merge.Env = append(os.Environ(),
-		"GIT_AUTHOR_NAME=Hokan",
-		"GIT_AUTHOR_EMAIL=hokan@localhost",
-		"GIT_COMMITTER_NAME=Hokan",
-		"GIT_COMMITTER_EMAIL=hokan@localhost",
-	)
+	merge.Env = append(os.Environ(), mergeIdent(authorName, authorEmail)...)
 	out, err := merge.CombinedOutput()
 	if err != nil {
 		_ = exec.Command("git", "-C", tmp, "merge", "--abort").Run()

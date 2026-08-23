@@ -629,7 +629,7 @@ func (s *Server) pullMerge(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	sha, err := git.MergeCommit(s.Disk.Path(repo.OwnerName, repo.Name), pr.SourceBranch, pr.TargetBranch, "Merge pull request #"+strconv.Itoa(n))
+	sha, err := git.MergeCommit(s.Disk.Path(repo.OwnerName, repo.Name), pr.SourceBranch, pr.TargetBranch, "Merge pull request #"+strconv.Itoa(n), u.Username, u.Email)
 	if err != nil {
 		http.Redirect(w, r, "/"+repo.FullName()+"/pulls/"+strconv.Itoa(n)+"?error="+err.Error(), http.StatusSeeOther)
 		return
