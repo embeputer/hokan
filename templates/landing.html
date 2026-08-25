@@ -1,0 +1,94 @@
+{{define "title"}}Hokan — Self-hosted Git forge{{end}}
+{{define "main"}}
+<main class="landing-page">
+  {{if .Flash}}<div class="flash {{.FlashType}}">{{.Flash}}</div>{{end}}
+  <section class="landing-hero">
+    <p class="landing-kicker">Self-hosted · Git · CI</p>
+    <h1 class="landing-title">Git hosting you run yourself</h1>
+    <p class="landing-lede">Repositories, pull requests, issues, and CI on your own machine — a single binary, SQLite, and bare Git repos on disk.</p>
+    <div class="landing-cta">
+      {{if .AllowSignup}}<a class="btn" href="/signup">Create an account</a>{{end}}
+      <a class="btn ghost" href="/login">Log in</a>
+      <a class="btn ghost" href="#explore">Explore repositories</a>
+    </div>
+  </section>
+
+  <section class="landing-features">
+    <h2>What you get</h2>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="feature-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4 20 12 12 20 4 12Z"/></svg>
+        </div>
+        <h3>Git hosting</h3>
+        <p>Clone and push over HTTP or SSH. Browse code, branches, commits, and search in the browser.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10l-3-3M17 17H7l3 3"/></svg>
+        </div>
+        <h3>Pull requests</h3>
+        <p>Propose changes, review diffs inline, discuss in threads, and merge when ready.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+        </div>
+        <h3>Issues</h3>
+        <p>Track bugs, tasks, and discussions alongside your code. Open, close, and comment in one place.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 6.5v11l10-5.5z"/></svg>
+        </div>
+        <h3>Built-in CI</h3>
+        <p>Run pipelines on push and pull requests with a lightweight runner — no extra CI subscription.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="9" r="2.2"/><circle cx="16" cy="9" r="2.2"/><circle cx="12" cy="16" r="2.2"/></svg>
+        </div>
+        <h3>Organizations</h3>
+        <p>Group repositories under teams, manage access, and collaborate on a single instance.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M4 20V10l8-6 8 6v10H4z"/></svg>
+        </div>
+        <h3>Self-hosted</h3>
+        <p>One Go binary and files on disk. You own the data and the deployment.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="landing-explore" id="explore">
+    <h2>Public repositories</h2>
+    {{if .Repos}}
+      <p class="landing-explore-lede">Browse projects hosted on this instance.</p>
+      <div class="list">
+        {{range .Repos}}
+          <div class="card repo-card">
+            <div class="repo-card-main">
+              <img class="avatar avatar-sm" src="{{avatarURL .OwnerName}}" alt="" width="24" height="24">
+              <div>
+                {{if eq .OwnerType "org"}}<a href="/orgs/{{.OwnerName}}">{{.OwnerName}}</a>{{else}}<a href="/{{.OwnerName}}">{{.OwnerName}}</a>{{end}}<span class="faint"> / </span><a href="/{{.OwnerName}}/{{.Name}}">{{.Name}}</a>
+              </div>
+            </div>
+            <span><span class="pill">public</span></span>
+          </div>
+        {{end}}
+      </div>
+    {{else}}
+      <p class="landing-explore-lede">No public repositories yet.{{if .AllowSignup}} Create an account to host the first one.{{end}}</p>
+    {{end}}
+  </section>
+
+  <section class="landing-footer-cta">
+    <p>Ready to start?</p>
+    <div class="landing-cta">
+      {{if .AllowSignup}}<a class="btn" href="/signup">Sign up</a>{{end}}
+      <a class="btn ghost" href="/login">Log in</a>
+    </div>
+  </section>
+</main>
+{{end}}

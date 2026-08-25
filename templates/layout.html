@@ -7,15 +7,15 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/static/style.css">
-  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
   <script src="/static/app.js" defer></script>
 </head>
-<body>
+<body{{if .BodyClass}} class="{{.BodyClass}}"{{end}}>
 <header class="nav">
   <a class="brand" href="/"><span class="brand-mark"></span><span class="brand-name">Hokan</span></a>
   <nav class="nav-links">
-    <a href="/">Repos</a>
     {{if .User}}
+      <a href="/">Repos</a>
       <a href="/orgs">Orgs</a>
       <details class="menu">
         <summary class="nav-user">
@@ -31,14 +31,17 @@
         </div>
       </details>
     {{else}}
+      <a href="/#explore">Explore</a>
       <a href="/login">Log in</a>
-      <a class="btn" href="/signup" style="color:#1a1408">Sign up</a>
+      {{if .AllowSignup}}<a class="btn" href="/signup">Sign up</a>{{end}}
     {{end}}
   </nav>
 </header>
+{{block "main" .}}
 <main class="wrap">
   {{if .Flash}}<div class="flash {{.FlashType}}">{{.Flash}}</div>{{end}}
   {{block "content" .}}{{end}}
 </main>
+{{end}}
 </body>
 </html>

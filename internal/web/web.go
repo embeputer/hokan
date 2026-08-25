@@ -38,42 +38,44 @@ type Server struct {
 }
 
 type page struct {
-	User       *store.User
-	Flash      string
-	FlashType  string
-	Repo       *store.Repo
-	Repos      []store.Repo
-	Keys       []store.SSHKey
-	Tokens     []store.Token
-	NewToken   string
-	CloneHTTP  string
-	CloneSSH   string
-	Entries    []git.TreeEntry
-	Parent     string
-	PathPrefix string
-	Ref        string
-	Query      string
-	ReadmeHTML template.HTML
-	BlobHTML   template.HTML
-	Commits    []git.Commit
-	Branches   []string
-	Hits       []git.SearchHit
-	Pulls      []store.PullRequest
-	PR         *store.PullRequest
-	Diff       string
-	DiffHTML   template.HTML
-	Comments   []store.Comment
-	MergeError string
-	Issues     []store.Issue
-	Issue      *store.Issue
-	Jobs       []store.CIJob
-	Job        *store.CIJob
-	Orgs       []store.Org
-	Org        *store.Org
-	Teams      []store.Team
-	Tab        string
-	BlobPath   string
-	Profile    *store.User
+	User        *store.User
+	AllowSignup bool
+	BodyClass   string
+	Flash       string
+	FlashType   string
+	Repo        *store.Repo
+	Repos       []store.Repo
+	Keys        []store.SSHKey
+	Tokens      []store.Token
+	NewToken    string
+	CloneHTTP   string
+	CloneSSH    string
+	Entries     []git.TreeEntry
+	Parent      string
+	PathPrefix  string
+	Ref         string
+	Query       string
+	ReadmeHTML  template.HTML
+	BlobHTML    template.HTML
+	Commits     []git.Commit
+	Branches    []string
+	Hits        []git.SearchHit
+	Pulls       []store.PullRequest
+	PR          *store.PullRequest
+	Diff        string
+	DiffHTML    template.HTML
+	Comments    []store.Comment
+	MergeError  string
+	Issues      []store.Issue
+	Issue       *store.Issue
+	Jobs        []store.CIJob
+	Job         *store.CIJob
+	Orgs        []store.Org
+	Org         *store.Org
+	Teams       []store.Team
+	Tab         string
+	BlobPath    string
+	Profile     *store.User
 }
 
 func (s *Server) Routes(r chi.Router) {
@@ -146,6 +148,7 @@ var tmplFuncs = template.FuncMap{
 
 func (s *Server) render(w http.ResponseWriter, r *http.Request, pageName string, p page) {
 	p.User = auth.UserFrom(r.Context())
+	p.AllowSignup = s.Config.AllowSignup
 	if c, err := r.Cookie("flash"); err == nil {
 		p.Flash = c.Value
 		p.FlashType = "ok"
@@ -179,11 +182,17 @@ func (s *Server) setSession(w http.ResponseWriter, raw string) {
 }
 
 func (s *Server) home(w http.ResponseWriter, r *http.Request) {
-	uid := ""
-	if u := auth.UserFrom(r.Context()); u != nil {
-		uid = u.ID
+	u := auth.UserFrom(r.Context())
+	if u == nil {
+		repos, err := s.Store.Repos().ListVisible(r.Context(), "")
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+		s.render(w, r, "landing.html", page{Repos: repos, BodyClass: "page-landing"})
+		return
 	}
-	repos, err := s.Store.Repos().ListVisible(r.Context(), uid)
+	repos, err := s.Store.Repos().ListVisible(r.Context(), u.ID)
 	if err != nil {
 		http.Error(w, err.Error(), 500)
 		return
@@ -240,7 +249,9 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{Name: auth.CookieName, Value: "", Path: "/", MaxAge: -1})
+	http.SetCookie(w, &http.Cookie{
+		Name: auth.CookieName, Value: "", Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: -1,
+	})
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
