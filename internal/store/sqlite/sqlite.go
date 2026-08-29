@@ -123,13 +123,13 @@ func (s *userStore) Create(ctx context.Context, u *store.User) error {
 
 func (s *userStore) GetByID(ctx context.Context, id string) (*store.User, error) {
 	return s.scanUser(s.db.sql.QueryRowContext(ctx,
-		`SELECT id, username, email, password_hash, created_at FROM users WHERE id = ?`, id,
+		`SELECT id, username, email, password_hash, has_avatar, created_at FROM users WHERE id = ?`, id,
 	))
 }
 
 func (s *userStore) GetByUsername(ctx context.Context, username string) (*store.User, error) {
 	return s.scanUser(s.db.sql.QueryRowContext(ctx,
-		`SELECT id, username, email, password_hash, created_at FROM users WHERE username = ? COLLATE NOCASE`, username,
+		`SELECT id, username, email, password_hash, has_avatar, created_at FROM users WHERE username = ? COLLATE NOCASE`, username,
 	))
 }
 
@@ -142,11 +142,25 @@ func (s *userStore) Count(ctx context.Context) (int, error) {
 func (s *userStore) scanUser(row *sql.Row) (*store.User, error) {
 	var u store.User
 	var created string
-	if err := row.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &created); err != nil {
+	var has int
+	if err := row.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &has, &created); err != nil {
 		return nil, mapErr(err)
 	}
+	u.HasAvatar = has != 0
 	u.CreatedAt = parseTime(created)
 	return &u, nil
+}
+
+func (s *userStore) SetHasAvatar(ctx context.Context, userID string, has bool) error {
+	res, err := s.db.sql.ExecContext(ctx, `UPDATE users SET has_avatar = ? WHERE id = ?`, boolToInt(has), userID)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return store.ErrNotFound
+	}
+	return nil
 }
 
 func (s *userStore) CreateSession(ctx context.Context, sess *store.Session) error {
@@ -822,7 +836,7 @@ func (s *orgStore) RemoveTeamMember(ctx context.Context, teamID, userID string) 
 
 func (s *orgStore) ListTeamMembers(ctx context.Context, teamID string) ([]store.User, error) {
 	rows, err := s.db.sql.QueryContext(ctx,
-		`SELECT u.id, u.username, u.email, u.password_hash, u.created_at
+		`SELECT u.id, u.username, u.email, u.password_hash, u.has_avatar, u.created_at
 		 FROM team_members tm JOIN users u ON u.id = tm.user_id WHERE tm.team_id = ? ORDER BY u.username`, teamID)
 	if err != nil {
 		return nil, err
@@ -832,9 +846,11 @@ func (s *orgStore) ListTeamMembers(ctx context.Context, teamID string) ([]store.
 	for rows.Next() {
 		var u store.User
 		var created string
-		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &created); err != nil {
+		var has int
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.PasswordHash, &has, &created); err != nil {
 			return nil, err
 		}
+		u.HasAvatar = has != 0
 		u.CreatedAt = parseTime(created)
 		out = append(out, u)
 	}

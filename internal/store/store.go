@@ -27,6 +27,7 @@ type User struct {
 	Username     string    `json:"username"`
 	Email        string    `json:"email"`
 	PasswordHash string    `json:"-"`
+	HasAvatar    bool      `json:"has_avatar"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -204,6 +205,7 @@ type UserStore interface {
 	GetByID(ctx context.Context, id string) (*User, error)
 	GetByUsername(ctx context.Context, username string) (*User, error)
 	Count(ctx context.Context) (int, error)
+	SetHasAvatar(ctx context.Context, userID string, has bool) error
 
 	CreateSession(ctx context.Context, s *Session) error
 	GetSessionByTokenHash(ctx context.Context, hash string) (*Session, error)

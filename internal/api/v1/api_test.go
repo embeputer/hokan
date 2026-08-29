@@ -5,7 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -17,6 +20,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	api "github.com/hokan/hokan/internal/api/v1"
 	"github.com/hokan/hokan/internal/auth"
+	"github.com/hokan/hokan/internal/avatar"
 	"github.com/hokan/hokan/internal/config"
 	"github.com/hokan/hokan/internal/git"
 	"github.com/hokan/hokan/internal/migrate"
@@ -43,7 +47,14 @@ func startTestServer(t *testing.T) (string, *sqlite.DB, *git.Disk) {
 	t.Cleanup(func() { _ = st.Close() })
 	disk := &git.Disk{Root: filepath.Join(dir, "repos")}
 	access := &auth.Access{Store: st}
-	h := &api.Handler{Store: st, Disk: disk, Access: access, Config: config.Config{BaseURL: "http://example", AllowSignup: true}}
+	blob := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/svg+xml")
+		_, _ = io.WriteString(w, `<svg xmlns="http://www.w3.org/2000/svg"></svg>`)
+	}))
+	t.Cleanup(blob.Close)
+	avatars := avatar.New(filepath.Join(dir, "avatars"), st.Users())
+	avatars.Origin = blob.URL
+	h := &api.Handler{Store: st, Disk: disk, Access: access, Config: config.Config{BaseURL: "http://example", AllowSignup: true}, Avatars: avatars}
 	gitHTTP := &git.HTTP{Disk: disk, Access: access, Store: st}
 	r := chi.NewRouter()
 	r.Use(auth.Middleware(access))
@@ -55,6 +66,9 @@ func startTestServer(t *testing.T) (string, *sqlite.DB, *git.Disk) {
 			}
 			next.ServeHTTP(w, req)
 		})
+	})
+	r.Get("/avatars/{username}", func(w http.ResponseWriter, req *http.Request) {
+		avatars.Serve(w, req, chi.URLParam(req, "username"))
 	})
 	r.Mount("/api/v1", h.Router())
 	srv := httptest.NewServer(r)
@@ -367,4 +381,136 @@ func TestGetUserProfile(t *testing.T) {
 
 	res = doJSON(t, "GET", base+"/api/v1/users/nobody", "", nil, 404)
 	res.Body.Close()
+}
+
+func tinyPNG() []byte {
+	img := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	var buf bytes.Buffer
+	_ = png.Encode(&buf, img)
+	return buf.Bytes()
+}
+
+func TestAvatarUploadAndDefault(t *testing.T) {
+	base, _, _ := startTestServer(t)
+	token := signup(t, base, "pixie", "p@p.p")
+
+	res := doJSON(t, "GET", base+"/api/v1/users/pixie", "", nil, 200)
+	var before struct {
+		Data map[string]any `json:"data"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&before); err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if before.Data["has_avatar"] != false {
+		t.Fatalf("has_avatar: %v", before.Data["has_avatar"])
+	}
+	url, _ := before.Data["avatar_url"].(string)
+	if !strings.HasSuffix(url, "/avatars/pixie") {
+		t.Fatalf("avatar_url %q", url)
+	}
+
+	imgRes, err := http.Get(base + "/avatars/pixie")
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(imgRes.Body)
+	imgRes.Body.Close()
+	if imgRes.StatusCode != 200 {
+		t.Fatalf("default avatar %s", imgRes.Status)
+	}
+	if !bytes.Contains(body, []byte("<svg")) {
+		t.Fatal("expected default svg (blobatar or fallback)")
+	}
+
+	var mp bytes.Buffer
+	w := multipart.NewWriter(&mp)
+	fw, err := w.CreateFormFile("avatar", "me.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := fw.Write(tinyPNG()); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	req, _ := http.NewRequest("POST", base+"/api/v1/user/avatar", &mp)
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	up, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	upBody, _ := io.ReadAll(up.Body)
+	up.Body.Close()
+	if up.StatusCode != 200 {
+		t.Fatalf("upload %s: %s", up.Status, upBody)
+	}
+
+	res = doJSON(t, "GET", base+"/api/v1/user", token, nil, 200)
+	var me struct {
+		Data map[string]any `json:"data"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&me); err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if me.Data["has_avatar"] != true {
+		t.Fatalf("has_avatar after upload: %v", me.Data["has_avatar"])
+	}
+
+	imgRes, err = http.Get(base + "/avatars/pixie")
+	if err != nil {
+		t.Fatal(err)
+	}
+	custom, _ := io.ReadAll(imgRes.Body)
+	imgRes.Body.Close()
+	if imgRes.StatusCode != 200 {
+		t.Fatalf("custom avatar %s", imgRes.Status)
+	}
+	ct := imgRes.Header.Get("Content-Type")
+	if !strings.Contains(ct, "png") {
+		t.Fatalf("content-type %s", ct)
+	}
+	if bytes.Contains(custom, []byte("<svg")) {
+		t.Fatal("custom avatar should not be svg")
+	}
+
+	del, err := http.NewRequest("DELETE", base+"/api/v1/user/avatar", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	del.Header.Set("Authorization", "Bearer "+token)
+	gone, err := http.DefaultClient.Do(del)
+	if err != nil {
+		t.Fatal(err)
+	}
+	goneBody, _ := io.ReadAll(gone.Body)
+	gone.Body.Close()
+	if gone.StatusCode != 200 {
+		t.Fatalf("delete %s: %s", gone.Status, goneBody)
+	}
+
+	res = doJSON(t, "GET", base+"/api/v1/user", token, nil, 200)
+	if err := json.NewDecoder(res.Body).Decode(&me); err != nil {
+		t.Fatal(err)
+	}
+	res.Body.Close()
+	if me.Data["has_avatar"] != false {
+		t.Fatalf("has_avatar after delete: %v", me.Data["has_avatar"])
+	}
+
+	imgRes, err = http.Get(base + "/avatars/pixie")
+	if err != nil {
+		t.Fatal(err)
+	}
+	after, _ := io.ReadAll(imgRes.Body)
+	imgRes.Body.Close()
+	if imgRes.StatusCode != 200 {
+		t.Fatalf("default after delete %s", imgRes.Status)
+	}
+	if !bytes.Contains(after, []byte("<svg")) {
+		t.Fatal("expected svg after delete")
+	}
 }

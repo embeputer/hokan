@@ -59,7 +59,7 @@ func (h *Handler) signup(w http.ResponseWriter, r *http.Request) {
 		mapStoreError(w, err)
 		return
 	}
-	writeJSON(w, 201, map[string]any{"user": userJSON(u), "token": raw})
+	writeJSON(w, 201, map[string]any{"user": h.userJSON(u), "token": raw})
 }
 
 func gitValid(name string) bool {
@@ -87,7 +87,7 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		mapStoreError(w, err)
 		return
 	}
-	writeJSON(w, 200, map[string]any{"user": userJSON(u), "token": raw})
+	writeJSON(w, 200, map[string]any{"user": h.userJSON(u), "token": raw})
 }
 
 func (h *Handler) newSession(r *http.Request, u *store.User) (string, *store.Session, error) {

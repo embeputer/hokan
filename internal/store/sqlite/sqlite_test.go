@@ -128,3 +128,33 @@ func TestRepoCRUD(t *testing.T) {
 		t.Fatalf("want not found, got %v", err)
 	}
 }
+
+func TestUserHasAvatar(t *testing.T) {
+	db := openTestDB(t)
+	ctx := context.Background()
+	u := &store.User{ID: uuid.NewString(), Username: "erin", Email: "e@e.com", PasswordHash: "h", CreatedAt: time.Now()}
+	if err := db.Users().Create(ctx, u); err != nil {
+		t.Fatal(err)
+	}
+	got, err := db.Users().GetByID(ctx, u.ID)
+	if err != nil || got.HasAvatar {
+		t.Fatalf("default has_avatar: %v %#v", err, got)
+	}
+	if err := db.Users().SetHasAvatar(ctx, u.ID, true); err != nil {
+		t.Fatal(err)
+	}
+	got, err = db.Users().GetByUsername(ctx, "erin")
+	if err != nil || !got.HasAvatar {
+		t.Fatalf("after set: %v %#v", err, got)
+	}
+	if err := db.Users().SetHasAvatar(ctx, u.ID, false); err != nil {
+		t.Fatal(err)
+	}
+	got, err = db.Users().GetByID(ctx, u.ID)
+	if err != nil {
+		t.Fatalf("get by id: %v", err)
+	}
+	if got.HasAvatar {
+		t.Fatal("expected has_avatar false")
+	}
+}

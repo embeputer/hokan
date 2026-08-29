@@ -3,6 +3,7 @@ package web
 import (
 	"bytes"
 	"html/template"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -16,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/hokan/hokan/internal/auth"
+	"github.com/hokan/hokan/internal/avatar"
 	"github.com/hokan/hokan/internal/config"
 	"github.com/hokan/hokan/internal/git"
 	"github.com/hokan/hokan/internal/store"
@@ -27,16 +29,18 @@ import (
 )
 
 type Server struct {
-	Store  store.Store
-	Disk   *git.Disk
-	Access *auth.Access
-	Config config.Config
-	OnPR   func(repo *store.Repo, pr *store.PullRequest, sha string)
+	Store   store.Store
+	Disk    *git.Disk
+	Access  *auth.Access
+	Config  config.Config
+	Avatars *avatar.Service
+	OnPR    func(repo *store.Repo, pr *store.PullRequest, sha string)
 }
 
 type page struct {
 	User        *store.User
 	AllowSignup bool
+	BodyClass   string
 	Flash       string
 	FlashType   string
 	Repo        *store.Repo
@@ -82,6 +86,10 @@ func (s *Server) Routes(r chi.Router) {
 	r.Get("/login", s.loginForm)
 	r.Post("/login", s.login)
 	r.Get("/logout", s.logout)
+	r.Get("/avatars/{username}", s.serveAvatar)
+	r.Get("/settings/profile", s.profileSettings)
+	r.Post("/settings/profile", s.uploadAvatar)
+	r.Post("/settings/profile/delete", s.deleteAvatar)
 	r.Get("/settings/keys", s.keys)
 	r.Post("/settings/keys", s.addKey)
 	r.Post("/settings/keys/{id}/delete", s.deleteKey)
@@ -129,11 +137,12 @@ var tmplFuncs = template.FuncMap{
 		}
 		return s
 	},
-	"initial": func(s string) string {
-		for _, r := range s {
-			return strings.ToUpper(string(r))
+	"avatarURL": func(name string) string {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			name = "_"
 		}
-		return "?"
+		return "/avatars/" + url.PathEscape(name)
 	},
 }
 
@@ -180,7 +189,7 @@ func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), 500)
 			return
 		}
-		s.render(w, r, "landing.html", page{Repos: repos})
+		s.render(w, r, "landing.html", page{Repos: repos, BodyClass: "page-landing"})
 		return
 	}
 	repos, err := s.Store.Repos().ListVisible(r.Context(), u.ID)
@@ -240,8 +249,91 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{Name: auth.CookieName, Value: "", Path: "/", MaxAge: -1})
+	http.SetCookie(w, &http.Cookie{
+		Name: auth.CookieName, Value: "", Path: "/", HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: -1,
+	})
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s *Server) serveAvatar(w http.ResponseWriter, r *http.Request) {
+	if s.Avatars == nil {
+		http.NotFound(w, r)
+		return
+	}
+	s.Avatars.Serve(w, r, chi.URLParam(r, "username"))
+}
+
+func (s *Server) requireUser(w http.ResponseWriter, r *http.Request) *store.User {
+	u := auth.UserFrom(r.Context())
+	if u == nil {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+	}
+	return u
+}
+
+func (s *Server) profileSettings(w http.ResponseWriter, r *http.Request) {
+	if s.requireUser(w, r) == nil {
+		return
+	}
+	s.render(w, r, "settings_profile.html", page{Tab: "profile"})
+}
+
+func (s *Server) uploadAvatar(w http.ResponseWriter, r *http.Request) {
+	u := s.requireUser(w, r)
+	if u == nil {
+		return
+	}
+	if s.Avatars == nil {
+		http.Error(w, "avatars unavailable", 500)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, avatar.MaxBytes+4096)
+	if err := r.ParseMultipartForm(avatar.MaxBytes); err != nil {
+		if avatar.TooLarge(err) {
+			http.Error(w, "file too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		http.Error(w, "invalid upload", 400)
+		return
+	}
+	f, _, err := r.FormFile("avatar")
+	if err != nil {
+		http.Error(w, "choose an image to upload", 400)
+		return
+	}
+	defer f.Close()
+	data, err := io.ReadAll(io.LimitReader(f, avatar.MaxBytes+1))
+	if err != nil {
+		http.Error(w, "could not read file", 400)
+		return
+	}
+	if err := s.Avatars.AttachCustom(r.Context(), s.Store.Users(), u.ID, data); err != nil {
+		code := 500
+		if avatar.IsInput(err) {
+			code = 400
+		}
+		http.Error(w, err.Error(), code)
+		return
+	}
+	s.flash(w, "Avatar updated")
+	http.Redirect(w, r, "/settings/profile", http.StatusSeeOther)
+}
+
+func (s *Server) deleteAvatar(w http.ResponseWriter, r *http.Request) {
+	u := s.requireUser(w, r)
+	if u == nil {
+		return
+	}
+	if s.Avatars == nil {
+		http.Error(w, "avatars unavailable", 500)
+		return
+	}
+	if err := s.Avatars.DetachCustom(r.Context(), s.Store.Users(), u.ID); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+	s.flash(w, "Avatar removed")
+	http.Redirect(w, r, "/settings/profile", http.StatusSeeOther)
 }
 
 func (s *Server) keys(w http.ResponseWriter, r *http.Request) {
